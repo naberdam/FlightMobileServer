@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using FlightMobileAppServer.Models;
 using FlightServer.Models;
@@ -14,57 +15,41 @@ namespace FlightServer.Controllers
     public class CommandController : ControllerBase
     {
         private MySimulatorModel flightGear;
+        // Const string that represents when url is not correct and send it to client.
+        private const string NoSuchUrl = "There is no such url";
         public CommandController(MySimulatorModel flightGear1)
         {
             flightGear = flightGear1;
         }
 
-        // POST: api/Command
+        // POST: api/command
         [HttpPost]
         public async Task<ActionResult<string>> Post([FromBody]Command value)
         {
+            // If the request url is not correct, send appropirate message.
+            if (!CheckUrlRequest()) { return BadRequest(NoSuchUrl); }
+            // The url is correct, so we can execute the program with the given value.
             string myResult = await flightGear.Execute(value);
+            // Check if everything is good.
             if (myResult == MySimulatorModel.EverythingIsGood)
             {
                 return Ok(MySimulatorModel.EverythingIsGood);
             }
-            return NotFound(myResult/*AppropriateError(myResult)*/);
+            // Something went wrong, then send the message in myResult.
+            return NotFound(myResult);
         }
-
-        private string AppropriateError(Result result)
+        // Function that checks if the request url is correct. 
+        private bool CheckUrlRequest()
         {
-            string exceptionMsg;
-            switch (result)
+            string urlRequest = Request.Path;
+            // The pattern we asked for.
+            string pattern = @"^/api/command$";
+            // Check if the givven url is correct.
+            if (!Regex.IsMatch(urlRequest, pattern))
             {
-                case Result.WriteObjectDisposedException:
-                    exceptionMsg = MySimulatorModel.WriteObjectDisposedException;
-                    break;
-                case Result.WriteInvalidOperationException:
-                    exceptionMsg = MySimulatorModel.WriteInvalidOperationException;
-                    break;
-                case Result.WriteIOException:
-                    exceptionMsg = MySimulatorModel.WriteIOException;
-                    break;
-                case Result.ReadObjectDisposedException:
-                    exceptionMsg = MySimulatorModel.ReadObjectDisposedException;
-                    break;
-                case Result.ReadInvalidOperationException:
-                    exceptionMsg = MySimulatorModel.ReadInvalidOperationException;
-                    break;
-                case Result.ReadTimeoutException:
-                    exceptionMsg = MySimulatorModel.ReadTimeoutException;
-                    break;
-                case Result.ReadIOException:
-                    exceptionMsg = MySimulatorModel.ReadIOException;
-                    break;
-                case Result.RegularException:
-                    exceptionMsg = MySimulatorModel.RegularException;
-                    break;
-                default:
-                    exceptionMsg = "";
-                    break;
+                return false;
             }
-            return exceptionMsg;
+            return true;
         }
     }
 }

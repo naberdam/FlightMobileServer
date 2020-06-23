@@ -21,14 +21,5 @@ namespace FlightMobileAppServer.Models
         [JsonPropertyName("Throttle")]
         [Required]
         public double Throttle { get; set; }
-
-        // Set the values from post command.
-        public void SetValuesFromPost(Command command)
-        {
-            Aileron = command.Aileron;
-            Rudder = command.Rudder;
-            Elevator = command.Elevator;
-            Throttle = command.Throttle;
-        }
     }
 }

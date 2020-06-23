@@ -14,66 +14,81 @@ namespace FlightServer.Models
         TcpClient tcpclnt;
         NetworkStream stm;
         bool connect;
+        // Const string that represents all exceptions that we want to send to client.
+        private const string ConnectionMessage = "There is a problem with connecting" +
+            " to the server";
+        private const string TcpClientCloseMessage = "There is a problen of closing" +
+            " TcpClient";
+        private const string NetworStreamCloseMessage = "There is a problen of closing" +
+            " NetworkStream";
+        private const string SendTextToServerInBeginning = "data\n";
+        private const string EverythingIsGood = "Ok";
+        private const string ERRMessage = "ERR";
+
 
         public ClientTcp()
         {
             this.tcpclnt = new TcpClient();
             connect = false;
         }
-
+        // Function that connects to server.
         public string Connect(string ip, int port)
         {
-            if (IsConnect()) { return "Ok"; }
+            if (IsConnect()) { return EverythingIsGood; }
             try
             {
                 tcpclnt.Connect(ip, port);
                 this.stm = this.tcpclnt.GetStream();
-                Write("data\n");
+                Write(SendTextToServerInBeginning);
                 connect = true;
             }
             catch (Exception)
             {
                 connect = false;
-                return "There is a problem with connecting to the server";
+                return ConnectionMessage;
             }
-            return "Ok";
+            return EverythingIsGood;
         }
+        // Function that disconnect from server.
         public string Disconnect()
         {
-            if (!IsConnect()) { return "Ok"; }
+            if (!IsConnect()) { return EverythingIsGood; }
             try
             {
                 // Close networkStream.
                 tcpclnt.GetStream().Close();
-            }// The networkStream was already closed or something else happen.
+            }
+            // The networkStream was already closed or something else happen.
             catch (Exception) 
             {
-                return "There is a problen of closing NetworkStream";
+                return NetworStreamCloseMessage;
             }
             try
             {
                 // Close tcpClient.
                 tcpclnt.Close();
-            }// The tcpclnt was already closed or something else happen.
+            }
+            // The tcpclnt was already closed or something else happen.
             catch (Exception) 
             {
-                return "There is a problen of closing TcpClient";
+                return TcpClientCloseMessage;
             }
             connect = false;
             tcpclnt = null;
-            return "Ok";
+            return EverythingIsGood;
         }
-
+        // Function that read from server.
         public string Read()
         {
             if (tcpclnt == null)
             {
-                return "ERR";
+                return ERRMessage;
             }
             // Time out of 10 seconds.
             tcpclnt.ReceiveTimeout = 10000;
             this.stm.ReadTimeout = 10000;
-            // Only if the ReceiveBufferSize not empty so we want to convert the message to string and return it.
+            // Only if the ReceiveBufferSize not empty so we want to convert the 
+            // Message to string and return it.
             if (tcpclnt.ReceiveBufferSize > 0)
             {
                 byte[] bb = new byte[tcpclnt.ReceiveBufferSize];
@@ -85,23 +100,17 @@ namespace FlightServer.Models
                 }
                 return massage;
             }
-            return "ERR";
+            return ERRMessage;
         }
+        // Function that writes to server.
         public void Write(string command)
         {
-            try
-            {
-                this.stm = this.tcpclnt.GetStream();
-                ASCIIEncoding asen = new ASCIIEncoding();
-                byte[] ba = asen.GetBytes(command);
-                stm.Write(ba, 0, ba.Length);
-            }
-            catch (Exception)
-            {
-                Console.WriteLine("The sever is stoped");
-                Thread.Sleep(2000);
-            }
+            this.stm = this.tcpclnt.GetStream();
+            ASCIIEncoding asen = new ASCIIEncoding();
+            byte[] ba = asen.GetBytes(command);
+            stm.Write(ba, 0, ba.Length);
         }
+        // Function that returns the status connection of server.
         public bool IsConnect()
         {
             return connect;
