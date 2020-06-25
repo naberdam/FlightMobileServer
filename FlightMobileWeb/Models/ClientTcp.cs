@@ -28,8 +28,18 @@ namespace FlightServer.Models
 
         public ClientTcp()
         {
-            this.tcpclnt = new TcpClient();
-            connect = false;
+            ActivateClient();
+            /*this.tcpclnt = new TcpClient();
+            connect = false;*/
+        }
+
+        private void ActivateClient()
+        {
+            if (tcpclnt == null)
+            {
+                this.tcpclnt = new TcpClient();
+                connect = false;
+            }
         }
         // Function that connects to server.
         public string Connect(string ip, int port)
@@ -37,9 +47,11 @@ namespace FlightServer.Models
             if (IsConnect()) { return EverythingIsGood; }
             try
             {
+                ActivateClient();
                 tcpclnt.Connect(ip, port);
                 this.stm = this.tcpclnt.GetStream();
                 Write(SendTextToServerInBeginning);
+                //Thread.Sleep(500);
                 connect = true;
             }
             catch (Exception)
@@ -53,28 +65,53 @@ namespace FlightServer.Models
         public string Disconnect()
         {
             if (!IsConnect()) { return EverythingIsGood; }
+            string checkCloseNetworkStream = CloseNetworkStream();
+            string checkCloseTcpClient = CloseTcpClient();
+            if (checkCloseNetworkStream != EverythingIsGood)
+            {
+                return checkCloseNetworkStream;
+            }
+            if (checkCloseTcpClient != EverythingIsGood)
+            {
+                return checkCloseTcpClient;
+            }
+            return EverythingIsGood;
+        }
+        private string CloseNetworkStream()
+        {
             try
             {
                 // Close networkStream.
                 tcpclnt.GetStream().Close();
             }
             // The networkStream was already closed or something else happen.
-            catch (Exception) 
+            catch (Exception)
             {
                 return NetworStreamCloseMessage;
             }
+            finally
+            {
+                connect = false;
+            }
+            return EverythingIsGood;
+        }
+        private string CloseTcpClient()
+        {
             try
             {
                 // Close tcpClient.
                 tcpclnt.Close();
             }
             // The tcpclnt was already closed or something else happen.
-            catch (Exception) 
+            catch (Exception)
             {
                 return TcpClientCloseMessage;
             }
-            connect = false;
-            tcpclnt = null;
+            finally
+            {
+                connect = false;
+                tcpclnt = null;
+            }
             return EverythingIsGood;
         }
         // Function that read from server.

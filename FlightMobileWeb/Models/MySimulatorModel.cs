@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -103,6 +104,7 @@ namespace FlightServer.Models
         private string HandleOtherExceptions(string msgOfExcption)
         {
             readSucceed = false;
+            client.Disconnect();
             return msgOfExcption;
         }
         // Function that handle in IOException when we read from server.
@@ -138,18 +140,22 @@ namespace FlightServer.Models
             }
             catch (ObjectDisposedException)
             {
+                client.Disconnect();
                 return WriteObjectDisposedException;
             }
             catch (InvalidOperationException)
             {
+                client.Disconnect();
                 return WriteInvalidOperationException;
             }
             catch (IOException)
             {
+                client.Disconnect();
                 return WriteIOException;
             }
             catch (Exception)
             {
+                client.Disconnect();
                 return RegularException;
             }
         }
